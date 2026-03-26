@@ -1,0 +1,94 @@
+# SQL Setup - Quick Reference
+
+## Files Created/Updated
+
+### 1. **sql/init-schema.sql** (NEW)
+   - Creates USERS table with indexes
+   - Creates EXPENSES table with foreign key constraint
+   - Inserts 3 sample users (alice, bob, charlie)
+   - Inserts 11 sample expenses across all users
+   - Ready to run in Oracle SQL Developer
+
+### 2. **sql/README.md** (NEW)
+   - Complete setup guide with step-by-step instructions
+   - Table schema overview
+   - Sample credentials for testing
+   - Troubleshooting section
+   - API endpoints documentation
+
+### 3. **sql/data.sql** (NEW)
+   - Alternative data initialization (for Spring Boot auto-initialization)
+   - Copy to src/main/resources/ if using spring.jpa.hibernate.ddl-auto=create
+
+### 4. **src/main/resources/application.properties** (UPDATED)
+   - Changed `spring.jpa.hibernate.ddl-auto` from `create` to `validate`
+   - Now validates existing schema instead of auto-creating
+
+## Database Schema
+
+### USERS Table
+```
+ID (NUMBER) - Primary Key, Auto-increment
+USERNAME (VARCHAR2(100)) - Unique, Not Null
+PASSWORD (VARCHAR2(255)) - Not Null (BCrypt hash)
+```
+
+### EXPENSES Table
+```
+ID (NUMBER) - Primary Key, Auto-increment
+CATEGORY (VARCHAR2(100)) - Not Null
+AMOUNT (DECIMAL(10,2)) - Not Null
+COMMENTS (VARCHAR2(500)) - Optional
+USERNAME (VARCHAR2(100)) - Foreign Key to USERS.USERNAME
+CREATED_AT (TIMESTAMP) - Auto-set on insert
+UPDATED_AT (TIMESTAMP) - Auto-set on insert/update
+```
+
+## Quick Start
+
+### Option 1: Manual SQL Script (Recommended)
+```
+1. Open sql/init-schema.sql in Oracle SQL Developer
+2. Click Run Script (F5)
+3. Start the application: mvn spring-boot:run
+```
+
+### Option 2: Auto-Initialization on Startup
+```
+1. Copy sql/data.sql to src/main/resources/data.sql
+2. Change application.properties: spring.jpa.hibernate.ddl-auto=create
+3. Tables and data auto-create on first run
+```
+
+## Sample Users for Testing
+
+| Username | Password | Sample Expenses |
+|----------|----------|-----------------|
+| alice    | password123 | 5 expenses |
+| bob      | password456 | 4 expenses |
+| charlie  | password789 | 3 expenses |
+
+## BCrypt Hashed Passwords
+
+The SQL script uses pre-hashed passwords (BCrypt):
+- alice → $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36P4/TVK2
+- bob → $2a$10$V4aJUtg6v4fk1FX4w0Zpe.Hqmt8mGdnNx.p8KnMf8Dxzps6Tq7Yx6
+- charlie → $2a$10$R8gU7aQrCh9xQvL3m2qd4.uKpL8E5vN6x9K3pQ4rF7s0T1M2N3O4
+
+## Verification Queries
+
+Run in Oracle SQL Developer to verify setup:
+```sql
+SELECT * FROM users;
+SELECT * FROM expenses;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM expenses;
+SELECT username, COUNT(*) expense_count FROM expenses GROUP BY username;
+```
+
+Expected Results:
+- 3 users
+- 11 expenses total
+  - alice: 5 expenses
+  - bob: 4 expenses
+  - charlie: 3 expenses

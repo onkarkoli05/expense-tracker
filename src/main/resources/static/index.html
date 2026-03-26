@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Expense Tracker</title>
+    <!-- Chart.js for pie chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        /* ---- Navbar ---- */
+        nav {
+            background: #4f46e5;
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav h1 { font-size: 1.2rem; }
+        nav button {
+            background: white;
+            color: #4f46e5;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* ---- Auth Pages ---- */
+        .auth-container {
+            max-width: 400px;
+            margin: 80px auto;
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        }
+        .auth-container h2 { margin-bottom: 24px; color: #4f46e5; }
+        .auth-container input {
+            width: 100%;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .auth-container .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .auth-container .btn-primary:hover { background: #4338ca; }
+        .auth-container p { margin-top: 14px; text-align: center; font-size: 0.9rem; }
+        .auth-container a {
+            color: #4f46e5;
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-block;
+            padding: 2px 4px;
+            border-radius: 4px;
+            user-select: none;
+        }
+        .auth-container a:hover {
+            background: #ede9fe;
+            color: #4338ca;
+        }
+        .auth-container a:active {
+            transform: scale(0.98);
+        }
+        .error-msg { color: red; font-size: 0.85rem; margin-bottom: 10px; }
+
+        /* ---- Dashboard ---- */
+        .dashboard { padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+        /* Add Expense Form */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            margin-bottom: 24px;
+        }
+        .card h3 { margin-bottom: 16px; color: #4f46e5; }
+        .form-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .form-row input, .form-row select {
+            flex: 1;
+            min-width: 160px;
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+        .btn-add {
+            padding: 10px 24px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .btn-add:hover { background: #4338ca; }
+
+        /* Expenses Table */
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            background: #f8f9fa;
+            padding: 12px 14px;
+            text-align: left;
+            font-size: 0.85rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+        td { padding: 12px 14px; border-bottom: 1px solid #f0f0f0; }
+        tr:hover td { background: #fafafa; }
+        .btn-edit {
+            background: #fef3c7;
+            color: #d97706;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 6px;
+        }
+        .btn-delete {
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Pie Chart */
+        .chart-container { max-width: 380px; margin: 0 auto; }
+
+        /* Modal for editing */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white;
+            padding: 28px;
+            border-radius: 12px;
+            width: 420px;
+            max-width: 95%;
+        }
+        .modal h3 { margin-bottom: 16px; color: #4f46e5; }
+        .modal input, .modal select {
+            width: 100%;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+        .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+        .btn-save {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 9px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .btn-cancel {
+            background: #e5e7eb;
+            color: #333;
+            border: none;
+            padding: 9px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* Hidden utility */
+        .hidden { display: none !important; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+        .tab {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #e5e7eb;
+            color: #555;
+            font-size: 0.95rem;
+        }
+        .tab.active { background: #4f46e5; color: white; }
+    </style>
+</head>
+<body>
+
+<!-- ===================== NAVBAR ===================== -->
+<nav id="navbar" class="hidden">
+    <h1>💰 Expense Tracker</h1>
+    <div>
+        <span id="welcomeMsg" style="margin-right:14px; font-size:0.9rem;"></span>
+        <button onclick="logout()">Logout</button>
+    </div>
+</nav>
+
+<!-- ===================== LOGIN PAGE ===================== -->
+<div id="loginPage" class="auth-container">
+    <h2>🔐 Login</h2>
+    <div id="loginError" class="error-msg hidden"></div>
+    <input type="text" id="loginUsername" placeholder="Username" />
+    <input type="password" id="loginPassword" placeholder="Password" />
+    <button class="btn-primary" onclick="login()">Login</button>
+    <p>No account? <a onclick="showPage('signupPage')">Sign Up</a></p>
+</div>
+
+<!-- ===================== SIGNUP PAGE ===================== -->
+<div id="signupPage" class="auth-container hidden">
+    <h2>📝 Sign Up</h2>
+    <div id="signupError" class="error-msg hidden"></div>
+    <input type="text" id="signupUsername" placeholder="Choose a username" />
+    <input type="password" id="signupPassword" placeholder="Choose a password" />
+    <button class="btn-primary" onclick="signup()">Create Account</button>
+    <p>Already have an account? <a onclick="showPage('loginPage')">Login</a></p>
+</div>
+
+<!-- ===================== DASHBOARD ===================== -->
+<div id="dashboardPage" class="hidden">
+    <div class="dashboard">
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" id="tab-expenses" onclick="switchTab('expenses')">My Expenses</button>
+            <button class="tab" id="tab-chart" onclick="switchTab('chart')">📊 Pie Chart</button>
+        </div>
+
+        <!-- ---- EXPENSES TAB ---- -->
+        <div id="expensesTab">
+            <!-- Add Expense -->
+            <div class="card">
+                <h3>➕ Add New Expense</h3>
+                <div class="form-row">
+                    <select id="addCategory">
+                        <option value="">Select Category</option>
+                        <option>Food</option>
+                        <option>Travel</option>
+                        <option>Shopping</option>
+                        <option>Utilities</option>
+                        <option>Entertainment</option>
+                        <option>Health</option>
+                        <option>Other</option>
+                    </select>
+                    <input type="number" id="addAmount" placeholder="Amount (₹)" min="0" />
+                    <input type="text" id="addComments" placeholder="Comments (optional)" />
+                    <button class="btn-add" onclick="addExpense()">Add</button>
+                </div>
+                <div id="addError" class="error-msg hidden" style="margin-top:8px;"></div>
+            </div>
+
+            <!-- Expenses Table -->
+            <div class="card">
+                <h3>📋 All Expenses</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Comments</th>
+                            <th>Created At</th>
+                            <th>Updated At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesTableBody">
+                        <tr><td colspan="6" style="text-align:center;color:#999;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ---- CHART TAB ---- -->
+        <div id="chartTab" class="hidden">
+            <div class="card">
+                <h3>📊 Category-wise Expense Distribution</h3>
+                <div class="chart-container">
+                    <canvas id="pieChart"></canvas>
+                </div>
+                <p id="noChartData" class="hidden" style="text-align:center;color:#999;margin-top:20px;">No expense data to display.</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ===================== EDIT MODAL ===================== -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <h3>✏️ Edit Expense</h3>
+        <input type="hidden" id="editId" />
+        <select id="editCategory">
+            <option value="">Select Category</option>
+            <option>Food</option>
+            <option>Travel</option>
+            <option>Shopping</option>
+            <option>Utilities</option>
+            <option>Entertainment</option>
+            <option>Health</option>
+            <option>Other</option>
+        </select>
+        <input type="number" id="editAmount" placeholder="Amount (₹)" />
+        <input type="text" id="editComments" placeholder="Comments (optional)" />
+        <div class="modal-buttons">
+            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+            <button class="btn-save" onclick="saveEdit()">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Base API URL
+    const API = '';  // same origin (Spring serves both frontend and backend)
+    let token = localStorage.getItem('token') || null;
+    let currentUser = localStorage.getItem('username') || null;
+    let pieChartInstance = null;
+
+    // ----------------------------------------------------------------
+    // Page Navigation
+    // ----------------------------------------------------------------
+    function showPage(pageId) {
+        ['loginPage', 'signupPage', 'dashboardPage'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        document.getElementById(pageId).classList.remove('hidden');
+
+        if (pageId === 'dashboardPage') {
+            document.getElementById('navbar').classList.remove('hidden');
+            document.getElementById('welcomeMsg').textContent = `Hello, ${currentUser} 👋`;
+            loadExpenses();
+        } else {
+            document.getElementById('navbar').classList.add('hidden');
+        }
+    }
+
+    function switchTab(tab) {
+        document.getElementById('expensesTab').classList.toggle('hidden', tab !== 'expenses');
+        document.getElementById('chartTab').classList.toggle('hidden', tab !== 'chart');
+        document.getElementById('tab-expenses').classList.toggle('active', tab === 'expenses');
+        document.getElementById('tab-chart').classList.toggle('active', tab === 'chart');
+
+        if (tab === 'chart') renderPieChart();
+    }
+
+    // ----------------------------------------------------------------
+    // Auth — Signup
+    // ----------------------------------------------------------------
+    async function signup() {
+        const username = document.getElementById('signupUsername').value.trim();
+        const password = document.getElementById('signupPassword').value.trim();
+        const errEl = document.getElementById('signupError');
+        errEl.classList.add('hidden');
+
+        if (!username || !password) {
+            return showError(errEl, 'Username and password are required');
+        }
+
+        try {
+            const res = await fetch(`${API}/api/auth/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            
+            const data = await res.json();
+
+            if (!res.ok) {
+                return showError(errEl, data.message || 'Signup failed');
+            }
+
+            alert('Account created! Please log in.');
+            document.getElementById('signupUsername').value = '';
+            document.getElementById('signupPassword').value = '';
+            showPage('loginPage');
+        } catch (error) {
+            showError(errEl, 'Network error: ' + error.message);
+            console.error('Signup error:', error);
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // Auth — Login
+    // ----------------------------------------------------------------
+    async function login() {
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        const errEl = document.getElementById('loginError');
+        errEl.classList.add('hidden');
+
+        if (!username || !password) {
+            return showError(errEl, 'Username and password are required');
+        }
+
+        try {
+            const res = await fetch(`${API}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            
+            const data = await res.json();
+
+            if (!res.ok) {
+                return showError(errEl, data.message || 'Login failed');
+            }
+
+            // Save JWT token and username
+            token = data.token;
+            currentUser = data.username;
+            localStorage.setItem('token', token);
+            localStorage.setItem('username', currentUser);
+
+            // Clear form
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+
+            showPage('dashboardPage');
+        } catch (error) {
+            showError(errEl, 'Network error: ' + error.message);
+            console.error('Login error:', error);
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // Logout
+    // ----------------------------------------------------------------
+    function logout() {
+        token = null;
+        currentUser = null;
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        showPage('loginPage');
+    }
+
+    // ----------------------------------------------------------------
+    // Load & Render Expenses
+    // ----------------------------------------------------------------
+    let allExpenses = []; // in-memory cache for pie chart
+
+    async function loadExpenses() {
+        const res = await fetch(`${API}/api/expenses`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.status === 401) return logout();
+
+        allExpenses = await res.json();
+        renderTable(allExpenses);
+    }
+
+    function renderTable(expenses) {
+        const tbody = document.getElementById('expensesTableBody');
+        if (expenses.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">No expenses yet. Add one above!</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = expenses.map(e => `
+            <tr>
+                <td><span style="background:#ede9fe;color:#6d28d9;padding:3px 10px;border-radius:12px;font-size:0.85rem;">${e.category}</span></td>
+                <td><strong>₹${e.amount.toFixed(2)}</strong></td>
+                <td>${e.comments || '<span style="color:#bbb;">—</span>'}</td>
+                <td>${formatDate(e.createdAt)}</td>
+                <td>${formatDate(e.updatedAt)}</td>
+                <td>
+                    <button class="btn-edit" onclick="openEditModal(${e.id}, '${e.category}', ${e.amount}, '${e.comments || ''}')">Edit</button>
+                    <button class="btn-delete" onclick="deleteExpense(${e.id})">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function formatDate(dt) {
+        if (!dt) return '—';
+        return new Date(dt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    // ----------------------------------------------------------------
+    // Add Expense
+    // ----------------------------------------------------------------
+    async function addExpense() {
+        const category = document.getElementById('addCategory').value;
+        const amount = document.getElementById('addAmount').value;
+        const comments = document.getElementById('addComments').value.trim();
+        const errEl = document.getElementById('addError');
+        errEl.classList.add('hidden');
+
+        if (!category || !amount || parseFloat(amount) <= 0) {
+            return showError(errEl, 'Please select a category and enter a valid amount');
+        }
+
+        try {
+            const res = await fetch(`${API}/api/expenses`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ category, amount: parseFloat(amount), comments })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                return showError(errEl, errorData.message || 'Failed to add expense');
+            }
+
+            // Reset form
+            document.getElementById('addCategory').value = '';
+            document.getElementById('addAmount').value = '';
+            document.getElementById('addComments').value = '';
+
+            loadExpenses();
+        } catch (error) {
+            showError(errEl, 'Network error: ' + error.message);
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // Delete Expense
+    // ----------------------------------------------------------------
+    async function deleteExpense(id) {
+        if (!confirm('Delete this expense?')) return;
+
+        await fetch(`${API}/api/expenses/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        loadExpenses();
+    }
+
+    // ----------------------------------------------------------------
+    // Edit Modal
+    // ----------------------------------------------------------------
+    function openEditModal(id, category, amount, comments) {
+        document.getElementById('editId').value = id;
+        document.getElementById('editCategory').value = category;
+        document.getElementById('editAmount').value = amount;
+        document.getElementById('editComments').value = comments;
+        document.getElementById('editModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('editModal').classList.remove('active');
+    }
+
+    async function saveEdit() {
+        const id = document.getElementById('editId').value;
+        const category = document.getElementById('editCategory').value;
+        const amount = document.getElementById('editAmount').value;
+        const comments = document.getElementById('editComments').value.trim();
+
+        await fetch(`${API}/api/expenses/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ category, amount: parseFloat(amount), comments })
+        });
+
+        closeModal();
+        loadExpenses();
+    }
+
+    // ----------------------------------------------------------------
+    // Pie Chart — category totals
+    // ----------------------------------------------------------------
+    function renderPieChart() {
+        const noData = document.getElementById('noChartData');
+
+        if (allExpenses.length === 0) {
+            noData.classList.remove('hidden');
+            return;
+        }
+        noData.classList.add('hidden');
+
+        // Aggregate amounts by category
+        const totals = {};
+        allExpenses.forEach(e => {
+            totals[e.category] = (totals[e.category] || 0) + e.amount;
+        });
+
+        const labels = Object.keys(totals);
+        const data = Object.values(totals);
+        const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899'];
+
+        const ctx = document.getElementById('pieChart').getContext('2d');
+
+        // Destroy old chart if re-rendering
+        if (pieChartInstance) pieChartInstance.destroy();
+
+        pieChartInstance = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.label}: ₹${ctx.parsed.toFixed(2)}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ----------------------------------------------------------------
+    // Utility
+    // ----------------------------------------------------------------
+    function showError(el, msg) {
+        el.textContent = msg;
+        el.classList.remove('hidden');
+    }
+
+    // ----------------------------------------------------------------
+    // On page load — check if already logged in
+    // ----------------------------------------------------------------
+    if (token && currentUser) {
+        showPage('dashboardPage');
+    } else {
+        showPage('loginPage');
+    }
+</script>
+</body>
+</html>
